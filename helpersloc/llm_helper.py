@@ -7,8 +7,7 @@ system_prompt = Config.SYSTEM_PROMPT
 def chat(user_prompt, model, max_tokens=200, temp=0.7):
     client = Groq()
 
-    # create chat using OpenAI LLM
-    # https://platform.openai.com/docs/api-reference/chat/create
+    # create chat using Llama LLM
     completion = client.chat.completions.create(
     model=model,
     messages=[
