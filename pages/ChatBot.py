@@ -10,15 +10,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.title("Streamlit OpenAI Chatbot")
+st.title("Streamlit Llama Chatbot")
 
 # sets up sidebar nav widgets
 with st.sidebar:   
     st.markdown("# Chat Options")
-    # widget - https://docs.streamlit.io/library/api-reference/widgets/st.selectbox
 
-    # models - https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo
-    model = st.selectbox('What model would you like to use?',('llama3-8b-8192', 'llama-3.1-8b-instant'))
+    model = st.selectbox('What model would you like to use?',('llama-3.1-70b-versatile', 'llama-3.1-8b-instant'))
     
     # https://docs.streamlit.io/library/api-reference/widgets/st.number_input
     temperature = st.number_input('Temperature', value=0.7, min_value=0.1, max_value=1.0, step=0.1,
@@ -47,7 +45,6 @@ if user_prompt := st.chat_input("What questions do you have about the document?"
     st.session_state.messages.append({"role": "user", "content": user_prompt})
 
     with st.spinner('Generating response...'):
-        # retrieves response from OpenAI
         llm_response = chat(user_prompt, model=model, max_tokens=max_token_length,
                             temp=temperature)
 
