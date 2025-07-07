@@ -63,11 +63,14 @@ def make_request(url, results, session):
         rtt = (time.time() - rtt_start) * 1000
         html = response.text
         status_code = response.status_code
+        end_time = datetime.now()
+
+        index_html_size = len(response.content)
+        total_size = index_html_size
+        total_image_size = 0
+        total_text_size = index_html_size  # ← anggap HTML sebagai teks utama
 
         links = extract_links(html, url)
-        total_size = len(response.content)
-        total_image_size = 0
-        total_text_size = 0
 
         fetch_start = time.time()
         with ThreadPoolExecutor(max_workers=10) as executor:
@@ -118,17 +121,25 @@ def generate_traffic(urls, num_requests, rps, zipf_params, source_ips):
     executor.shutdown(wait=True)
     return results
 
-# === Simpan hasil ke CSV ===
-def log_to_csv(data_rows, filename='request_log_http.csv'):
+# === Simpan hasil ke CSV unik di folder idhul/ ===
+def log_to_csv(data_rows):
+    folder = "idhul"
+    os.makedirs(folder, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"request_log_http_{timestamp}.csv"
+    path = os.path.join(folder, filename)
+
     columns = [
         "URL", "RTT (ms)", "Status Code",
         "Total Size (KB)", "Throughput (KB/s)",
         "Image Size (KB)", "Text Size (KB)"
     ]
     df = pd.DataFrame(data_rows, columns=columns)
-    df.to_csv(filename, index=False)
+    df.to_csv(path, index=False)
+    return path
 
-# === File selector ===
+# === File selector untuk input URL ===
 def list_csv_files():
     files = [f for f in os.listdir() if f.endswith('.csv')]
     if not files:
@@ -165,9 +176,9 @@ def main():
     source_ips = input("Source IPs (pisah koma): ").split(',')
 
     results = generate_traffic(urls[:num_urls], num_requests, rps, (zipf_q, zipf_s), source_ips)
-    log_to_csv(results)
+    output_path = log_to_csv(results)
 
-    print("\n✅ Log disimpan ke: `request_log_http.csv`")
+    print(f"\n✅ Log disimpan ke: `{output_path}`")
 
 if __name__ == "__main__":
     main()
