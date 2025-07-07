@@ -8,7 +8,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urljoin
 import re
 
-# === Adapter untuk multiple source IP ===
 class SourceIPAdapter(requests.adapters.HTTPAdapter):
     def __init__(self, source_address, **kwargs):
         self.source_address = source_address
@@ -18,13 +17,11 @@ class SourceIPAdapter(requests.adapters.HTTPAdapter):
         kwargs['source_address'] = (self.source_address, 0)
         super(SourceIPAdapter, self).init_poolmanager(*args, **kwargs)
 
-# === Zipf Distribution ===
 def zipf_mandelbrot(N, q, s):
     ranks = np.arange(1, N + 1)
     weights = (ranks + q) ** -s
     return weights / weights.sum()
 
-# === Deteksi jenis konten dari URL ===
 def get_content_type_from_url(url):
     if re.search(r'\.(jpg|jpeg|png|gif|bmp|svg|webp)$', url, re.IGNORECASE):
         return 'image'
@@ -33,7 +30,6 @@ def get_content_type_from_url(url):
     else:
         return 'other'
 
-# === Ambil link resource dari HTML ===
 def extract_links(html, base_url):
     pattern = r'<img[^>]+src=["\'](.*?)["\']|<script[^>]+src=["\'](.*?)["\']|<link[^>]+href=["\'](.*?)["\']'
     matches = re.findall(pattern, html, re.IGNORECASE)
@@ -45,7 +41,6 @@ def extract_links(html, base_url):
                 links.add(absolute_link)
     return links
 
-# === Fetch resource (return size + jenis) ===
 def fetch_url(session, url):
     try:
         response = session.get(url, timeout=5)
@@ -55,7 +50,6 @@ def fetch_url(session, url):
     except requests.exceptions.RequestException:
         return 0, 'error'
 
-# === Single HTTP request & link tracing ===
 def make_request(url, results, session):
     try:
         rtt_start = time.time()
@@ -68,7 +62,7 @@ def make_request(url, results, session):
         index_html_size = len(response.content)
         total_size = index_html_size
         total_image_size = 0
-        total_text_size = index_html_size  # ← anggap HTML sebagai teks utama
+        total_text_size = index_html_size  # HTML dianggap teks utama
 
         links = extract_links(html, url)
 
@@ -102,7 +96,6 @@ def make_request(url, results, session):
         results.append(log_data)
         print(f"❌ {url} failed: {e}")
 
-# === Generate traffic menggunakan distribusi Zipf ===
 def generate_traffic(urls, num_requests, rps, zipf_params, source_ips):
     probs = zipf_mandelbrot(len(urls), *zipf_params)
     results = []
@@ -121,13 +114,10 @@ def generate_traffic(urls, num_requests, rps, zipf_params, source_ips):
     executor.shutdown(wait=True)
     return results
 
-# === Simpan hasil ke CSV unik di folder idhul/ ===
-def log_to_csv(data_rows):
-    folder = "idhul"
+def log_to_csv(data_rows, folder='idhul'):
     os.makedirs(folder, exist_ok=True)
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"request_log_http_{timestamp}.csv"
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'request_log_http_{timestamp}.csv'
     path = os.path.join(folder, filename)
 
     columns = [
@@ -137,9 +127,8 @@ def log_to_csv(data_rows):
     ]
     df = pd.DataFrame(data_rows, columns=columns)
     df.to_csv(path, index=False)
-    return path
+    print(f"\n✅ Log disimpan ke: {path}")
 
-# === File selector untuk input URL ===
 def list_csv_files():
     files = [f for f in os.listdir() if f.endswith('.csv')]
     if not files:
@@ -159,7 +148,6 @@ def list_csv_files():
             pass
         print("Input tidak valid!")
 
-# === Main Program ===
 def main():
     print("############ TRAFFIC SIMULATOR ############")
 
@@ -176,9 +164,7 @@ def main():
     source_ips = input("Source IPs (pisah koma): ").split(',')
 
     results = generate_traffic(urls[:num_urls], num_requests, rps, (zipf_q, zipf_s), source_ips)
-    output_path = log_to_csv(results)
-
-    print(f"\n✅ Log disimpan ke: `{output_path}`")
+    log_to_csv(results)
 
 if __name__ == "__main__":
     main()
